@@ -389,7 +389,7 @@ The combined design is GPL; publishing the FPGA source is required if boards are
   - CFG[2:0] = 010, strapped directly (CFG0 N10 and CFG2 R10 to GND, CFG1 P10 to +3V3).
   - Flash /CS is on **CSSPIN (N8)**, not SN (R8).
   - **22 Ω series resistors on all six flash lines**, at the FPGA end, and a **1 kΩ pull-up on MCLK**, per the Lattice checklist. 10 kΩ pull-ups on /CS, IO2 and IO3.
-  - The W25Q128JVSIQ ships with QE = 1, so /HOLD is disabled and IO2/IO3 are free for quad mode.
+  - The W25Q32JVZPIQ (4 MB, WSON-8 6×5 mm) has QE = 1 as a factory-fixed default, as do all Winbond "IQ" ordering options, so /HOLD is disabled and IO2/IO3 are free for quad mode. 4 MB holds a 25F bitstream (under 1 MB) several times over, and a 45F bitstream as well.
   - PROGRAMN, INITN and DONE: 4.7 kΩ pull-ups. TCK: 4.7 kΩ pull-down; TDI, TMS, TDO: 4.7 kΩ pull-ups.
 - **USB programming:** an STM32G431 on the USB-C data lines acts as a USB-to-JTAG adapter for openFPGALoader (DirtyJTAG port or CMSIS-DAP). It writes the configuration flash through the FPGA's JTAG port, so a bad bitstream is always recoverable. JTAG is on PA4–PA7 (TMS, TCK, TDO, TDI), the SPI1 pins, so SPI can accelerate shifting.
 - **Reload:** the STM32 drives PROGRAMN (PA3) and reads INITN (PA1) and DONE (PA2).
@@ -407,7 +407,7 @@ As a fallback, the board carries an unpopulated debug power input (J4). Moving s
 
 ### Power chain
 
-USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4, each with its own TVS, is selected by a solder jumper JP1 (default: VBUS), then passes through the power switch SW4 to the input node VCC. There are no OR diodes:
+USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected by a solder jumper JP1 (default: VBUS), then passes through the power switch SW4 to the input node VCC, where a single TVS (D4) protects whichever input is selected. There are no OR diodes:
 
 | Rail | Regulator | Input | Supplies |
 |---|---|---|---|
@@ -461,7 +461,7 @@ Each colour is driven from its own FPGA pin (A7 red, B7 green) through 1 kΩ. Ch
 - **Cartridge audio:** SL1 and SR1 each get a bidirectional H3V3L10B (3.3 V working, 3.5–5.5 V breakdown, 10 pF typical / 20 pF max, ≤0.5 µA leakage), because the audio swings below 0 V. The ADC's 3 Vpp full scale is ±1.5 V at the pin, well inside the 3.3 V working voltage.
 - **Unused 32X pins (b12–b15):** unconnected and unprotected, as nothing is attached.
 - **HDMI:** covered by the TPD12S016.
-- **USB VBUS and the debug input:** an SMAJ10A each, for surges as well as ESD.
+- **USB VBUS and the debug input:** one SMAJ10A (D4) on VCC, after JP1 and SW4, for surges as well as ESD. It protects whichever input JP1 selects. With SW4 off nothing downstream is powered, so the unprotected stretch from the connector to SW4 carries no risk.
 - **Power pins (cartridge +5 V, controller pin 5, HDMI +5 V):** no diode. A rail's own capacitance absorbs an ESD pulse: an 8 kV IEC discharge carries about 1.2 µC (150 pF × 8 kV), which raises 10 µF by about 0.12 V.
 - **Connector shells:** DE-9 and USB-C shells are grounded.
 - **Accepted risk:** a CC-to-VBUS short at 9 V exceeds the diodes' 6.5–8.5 V breakdown, so the diodes don't protect against it.
@@ -502,7 +502,7 @@ Authoritative manufacturer part numbers and LCSC numbers for every component, an
 |---|---|---|
 | FPGA | Lattice **LFE5U-25F-6BG256C** | ECP5, 24K LUTs, ~1 Mbit block RAM, 197 I/O, caBGA-256 (0.8 mm). The design target: the smallest and slowest part supported. Gateware is built and timed for it (`SPEED := 6`). See FPGA alternates. |
 | VRAM + 68000 work RAM | ISSI **IS61WV25616BLL-10TLI** | 256K×16 async SRAM, 10 ns, 3.3 V, TSOP-II-44. LCSC C53825. 128 KB used of 512 KB, on a dedicated 39-pin bus (A0–A17, D0–D15, /CE /OE /WE /UB /LB). Keep the 256K×16 rather than 64K×16: see Main memory. |
-| Configuration flash | Winbond **W25Q128JVSIQ** | 16 MB QSPI NOR, QE = 1 from the factory |
+| Configuration flash | Winbond **W25Q32JVZPIQ** | 4 MB QSPI NOR, WSON-8 6×5 mm, QE = 1 factory-fixed. Exposed pad (3.40 × 4.30 mm) unconnected internally; tied to GND. |
 | Programming / PD MCU | ST **STM32G431CB** | 48-pin, 128 KB flash, 32 KB RAM. USB FS on PA11/PA12 (crystal-less), UCPD CC1/CC2 on PB6/PB4, dead-battery DBCC on PA9/PA10, ROM DFU bootloader. |
 | Cartridge audio ADC | TI **PCM1808PWR** | 24-bit stereo ADC, 5 V analogue / 3.3 V digital, slave mode, I2S. TSSOP-14. |
 | Signal ESD | TI **TPD1E05U06DPY** (×71) | One per external signal pin. Single-line, 5.5 V working, 6.5 V minimum breakdown, 0.42 pF, ±12 kV contact / ±15 kV air (IEC 61000-4-2). X1SON 0402; use TI's DPY land pattern. |
@@ -510,7 +510,7 @@ Authoritative manufacturer part numbers and LCSC numbers for every component, an
 | 5 V, 3.3 V and 1.1 V regulators | TI **TPS563257DRLR** (×3) | 3–17 V input, 3 A synchronous buck, 1.2 MHz, forced continuous mode, precision EN, open-drain PG, SOT-563. D-CAP3: output capacitors and feed-forward per datasheet tables. |
 | 2.5 V regulator | TI **LP5907MFX-2.5** | LDO from 3.3 V, <100 mA |
 | Input selector | Solder jumper **JP1** (3-pad) | VBUS (default) or debug input to SW4 |
-| VBUS and debug-input TVS | **SMAJ10A** (×2) | Littelfuse, unidirectional, 400 W. 10 V standoff (above 9 V PD's 9.45 V), 11.1–12.3 V breakdown, 17.0 V clamp at 23.5 A (confirmed on the datasheet), which just meets the bucks' 17 V rating. |
+| Input TVS | **SMAJ10A** (×1, D4, on VCC after SW4) | Littelfuse, unidirectional, 400 W. 10 V standoff (above 9 V PD's 9.45 V), 11.1–12.3 V breakdown, 17.0 V clamp at 23.5 A (confirmed on the datasheet), which just meets the bucks' 17 V rating. |
 | Polyfuses | **nSMD020-30V** (×2), **1 A** (×1) | nSMD020-30V (Sea & Land / Alpha-Top): 0.20 A hold, 0.46 A trip, 30 V, 0.35 Ω minimum and 2.7 Ω maximum one hour after reflow, so up to about 0.5 V drop at the hold current; controller pin 5 ×2. 1 A hold on the cartridge +5 V (part to be chosen: low resistance). |
 | Cartridge level shifting | TI **SN74ALVC164245DGG** (×3) | TTL-level B inputs, VOH ≥ 4.3 V (VCCB 4.5 V, −100 µA). VCCA 2.3–3.6 V, VCCB 3–5.5 V; TI's power-up order (VCCA first) is met because 3.3 V always precedes 5 V. Data (U72), VA1–VA16 (U83), the rest (U71). TSSOP-48. |
 | Cartridge open-drain lines | **BSS138** (×5) | /DTACK, /MRES, /VRES, /CART, /M3. |
@@ -569,6 +569,7 @@ The schematic symbol was drawn for the 45F. Its 197 user I/O balls and their fun
   | Clock, PG, LED ×2, reset button | 5 |
 - Keep the PCM1808 and its input network beside slot pins b1/b3, away from the bus lines and the bucks.
 - KiCad SRAM footprint: `Package_SO:TSOP-II-44_10.16x18.41mm_P0.8mm`.
+- Configuration flash (WSON-8): no exposed vias under the centre pad, per Winbond. Include U69 in the X-ray inspection, as its joints can't be inspected visually.
 
 ## Design decisions and accepted risks
 
