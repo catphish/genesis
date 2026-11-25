@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "genesis") (type "KiCad") (uri "${KIPRJMOD}/genesis.pretty") (options "") (descr "Project footprints"))
+)

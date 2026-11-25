@@ -61,7 +61,7 @@ HDMI is the timing master, and the console is clocked to complete exactly one fr
 
 Audio is resampled to HDMI's 48 kHz in any case, so swallowing adds no audible effect beyond the pitch shift above. Both regions use one oscillator and one bitstream. Other modes, such as exact native speed with a few extra blanking lines, are gateware options to test on real TVs and need no hardware change.
 
-**Oscillator decoupling: one 100 nF at the pins, no ferrite bead.** Lattice's checklist (FPGA-TN-02038, Figure 10.1) shows a 600 Ω bead with 1 µF + 100 nF, but the margins here don't need it. Abracon asks only for about 10 nF. The PLL's phase detector runs at 27 MHz, where the ECP5 accepts 1,000 ps peak-to-peak input period jitter (tIPJIT, fPFD ≥ 20 MHz). The ASE's own jitter is 28 ps peak-to-peak typical, so the PLL, not the oscillator, sets HDMI clock quality. Lattice's Versa board does fit a bead, but on a SERDES reference clock, which this design doesn't use. Keep Y1 and its trace to E8 (PCLKT1_1) short and away from the SRAM and cartridge buses.
+**Oscillator decoupling: one 100 nF at the pins, no ferrite bead.** Lattice's checklist (FPGA-TN-02038, Figure 10.1) shows a 600 Ω bead with 1 µF + 100 nF, but the margins here don't need it. Epson asks for 0.01–0.1 µF. The PLL's phase detector runs at 27 MHz, where the ECP5 accepts 1,000 ps peak-to-peak input period jitter (tIPJIT, fPFD ≥ 20 MHz). The SG2016CAN's own jitter is 15–16 ps peak-to-peak (1.8 ps RMS) at 3.3 V, so the PLL, not the oscillator, sets HDMI clock quality. Lattice's Versa board does fit a bead, but on a SERDES reference clock, which this design doesn't use. Keep Y1 and its trace to E8 (PCLKT1_1) short and away from the SRAM and cartridge buses.
 
 ### Main memory
 
@@ -288,8 +288,12 @@ such as Mega-CD audio from an FPGA flash cart, reaches HDMI.
 
 Per channel, slot to ADC: a bidirectional H3V3L10B ESD diode at the pin (the
 cart's audio can swing below 0 V), a 47 kΩ load to GND that holds an empty slot
-quiet, and a 1 µF coupling capacitor into VINL/VINR (60 kΩ input impedance,
-2.7 Hz high-pass). Full scale is 0.6 × VCC = 3 Vpp; the PCM1808's own
+quiet, and a 10 µF coupling capacitor into VINL/VINR (60 kΩ input impedance,
+0.27 Hz high-pass). TI's 1 µF would give 2.7 Hz; 10 µF is used because the
+coupling capacitor is a class-2 ceramic with about 2.5 V DC across it, and the
+larger value keeps the signal voltage across it (and so its distortion)
+negligible: about 1% of the signal at 20 Hz instead of 13%. Inputs settle in
+about 0.6 s after power-up. Full scale is 0.6 × VCC = 3 Vpp; the PCM1808's own
 anti-alias filter is relied on, with no external RC.
 
 | Pin | Connection |
@@ -336,10 +340,12 @@ FPGA dir ──┬─ DIR             │
 - **Pull-down on each DIR**, so every pin listens until the FPGA is configured
   — the original's reset state (control register = 0). The 1T45 has no /OE;
   with the 5 V rail down its VCC isolation holds both sides high impedance.
-- **220 Ω series** on the port side. Software can and does drive a pin the
+- **220 Ω series, 0805** on the port side. Software can and does drive a pin the
   peripheral is also driving (4-Way Play detection does this against a normal
   pad); 220 Ω limits a 5 V-versus-0 V fight to ~23 mA, inside the 1T45's
-  ±32 mA rating, and still leaves a pulled-down input at ~0.1 V.
+  ±32 mA rating, and still leaves a pulled-down input at ~0.1 V. A sustained
+  fight dissipates about 116 mW, so these are 0805 (125 mW) rather than 0402
+  (62.5 mW), which also suits their place right behind the ESD diodes.
 - **ESD diode on every pin**, a TPD1E05U06 at the DE-9 side of the
   220 Ω resistor. See ESD protection.
 - **Pin 5 (+5 V)** through a 200 mA polyfuse, with 10 µF on the port side.
@@ -350,15 +356,27 @@ port data register {TH, TR, TL, D3, D2, D1, D0} — 28 in total, all in bank 1
 
 ### Front panel
 
-- **Power switch (SW4):** in the input path after the JP1 selector, so it cuts
-  everything, STM32 included. With the switch off the console cannot be
-  programmed either.
-- **Reset button (SW1):** to GND on FPGA ball D7, with no external pull-up.
-  Gateware enables the internal pull-up (`PULLMODE=UP`) and debounces it.
-  Before configuration the pin's weak pull-down reads it as pressed, which is
-  harmless because nothing is running yet.
+- **Power switch (SW4):** a latching push switch that turns a P-channel
+  MOSFET high-side switch (Q6, AO3407A) on and off. Q6 sits in the input path
+  after the JP1 selector, so it cuts everything, STM32 included; with the
+  switch off the console cannot be programmed either. SW4 only pulls Q6's gate
+  to GND against R148 (47k), so it carries about 106 µA (5 V source) to 190 µA
+  (9 V) rather than the console's input
+  current (up to about 1 A at 9 V), which no latching push switch at JLC is
+  rated for. Q6's source is on the supply side, so its body diode blocks when
+  off; Vgs is −9 V on (−5 V on a 5 V source), within its ±20 V rating even at
+  the 17 V TVS clamp. R148 is 47k rather than 100k because ALPS specifies a
+  minimum switching load of 50 µA at 3 V, which 100k would only just meet from
+  a 5 V source.
+- **Power and reset buttons** are a matched ALPS SPPH4 pair (same body,
+  plunger and cap): SPPH410100 latching for SW4, SPPH410200 momentary for SW1.
+- **Reset button (SW1):** to GND on FPGA ball D7 (net `RESET`), with a 10k
+  pull-up to +3V3 (R149). The external pull-up gives 330 µA through the
+  switch, above ALPS's 50 µA minimum; the ECP5's internal pull-up (30–150 µA)
+  might not be. Gateware sets `PULLMODE=NONE` on D7 and debounces it. Before
+  configuration R149 outweighs the pin's weak pull-down, so it reads released.
 - **STM32 buttons:** SW2 resets the STM32; SW3 pulls BOOT0 high for the ROM
-  DFU bootloader.
+  DFU bootloader. Both are Omron B3U-1000P tactile switches.
 
 ### Gateware integration work
 
@@ -370,7 +388,7 @@ The console logic comes from existing open-source cores (GPL). Project work is i
 - Transceiver sequencing, the /M3 interlock and the /VRES start-up pulse (see Cartridge bus level shifting). Open-drain drive on the BSS138 lines.
 - Connect the I/O port registers to the real controller pins (including TH).
 - PCM1808 I2S receiver (the FPGA is the clock master), resampler to 48 kHz, and mixer.
-- Reset button: internal pull-up, debounce, console soft reset.
+- Reset button: `PULLMODE=NONE` on D7 (external 10k pull-up R149), debounce, console soft reset.
 - HDMI output, scaler and blending filter: 480p60/576p50 timing, 2× line doubling, 2.5× horizontal scaling for H32, interlace bob/weave, and HDMI audio. Read the EDID at hot-plug and fall back to 60 Hz for PAL games on sinks without 50 Hz support. The TMDS pins follow the rules in the HDMI section.
 - Power-good handling. While PG is low:
   - the console is held in reset
@@ -401,13 +419,13 @@ The combined design is GPL; publishing the FPGA source is required if boards are
 
 A powered USB-C hub whose downstream ports provide both data and PD (including 9 V) powers the console while the PC talks to the STM32. Verify the hub's 9 V capability with a PD tester first.
 
-As a fallback, the board carries an unpopulated debug power input (J4). Moving solder jumper JP1 from VBUS to J4 lets a bench supply run the console while the PC still talks to the STM32 over USB data; nothing on the board senses VBUS.
+As a fallback, the board carries an unpopulated debug power input (J4). Moving JP1's shunt from VBUS to J4 lets a bench supply run the console while the PC still talks to the STM32 over USB data; nothing on the board senses VBUS.
 
 ## Power
 
 ### Power chain
 
-USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected by a solder jumper JP1 (default: VBUS), then passes through the power switch SW4 to the input node VCC, where a single TVS (D4) protects whichever input is selected. There are no OR diodes:
+USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected by a 3-pin header JP1 with a jumper shunt (default: VBUS) onto the node `POWER_IN`, where a single TVS (D4) protects whichever input is selected, then passes through the power switch (Q6, controlled by SW4) to the input node VCC. There are no OR diodes:
 
 | Rail | Regulator | Input | Supplies |
 |---|---|---|---|
@@ -416,10 +434,11 @@ USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected 
 | 2.5 V | LP5907 LDO (U70) | 3.3 V | FPGA VCCAUX (<100 mA) |
 | 5.0 V (console) | TPS563257 buck (U80) | VCC | Cartridge, controller ports, transceiver B-sides, HDMI +5 V, PCM1808 VCC |
 
-- **Bucks:** 5.00 V (220k/30k, 22 pF feed-forward), 3.30 V (135k/30k, 33 pF), 1.107 V (8.45k/10k), all per TI's Table 8-2. Inductors 2.2 µH, 2.2 µH, 1 µH.
+- **Bucks:** 5.00 V (220k/30k, 22 pF feed-forward), 3.327 V (150k/33k, 33 pF; 135k is a rare value, and 150k/33k keeps the 33 pF feed-forward zero at 32 kHz against TI's 36 kHz), 1.107 V (8.45k/10k), all per TI's Table 8-2. Inductors 2.2 µH, 2.2 µH, 1 µH (Sunlord MWSA0503S; see Component choices).
+- **Inductor current rating:** set by the TPS563257's overcurrent limit, not the load. The limit acts on *valley* current, up to 5.0 A (3.1 A min, 4.1 A typ), so in an overload or short the peak is that plus the ripple: about 6.2 A for L1 (ripple 0.95 A nominal, 1.2 A at −20% L, from 9 V), 6.1 A for L2 (0.84 / 1.05 A) and 5.8 A for L3 (0.61 / 0.76 A, from 3.3 V). Hence Isat ≥ about 6.5 A for all three, and ≥3 A thermal (the buck's rating); normal loads are about 1 A (3.3 V), 1.5 A (5 V) and 0.5 A (1.1 V).
 - **3.3 V enable:** 100k/47k on EN: on at VCC ≈ 3.7 V, off at ≈ 3.1 V.
 - **Console 5 V enable:** 53.6k/10k on EN: on at VCC ≈ 7.6 V, off at ≈ 6.4 V. With a 5 V-only source the rail stays off; everything else powers up and programming works.
-- **Input selection, not OR-ing:** JP1 connects either VBUS or the debug input, never both, so there is no diode drop and neither source can back-feed the other. Bridging both sides of JP1 would tie a bench supply to the USB source, so it ships bridged to VBUS only.
+- **Input selection, not OR-ing:** JP1 connects either VBUS or the debug input, never both, so there is no diode drop and neither source can back-feed the other. Bridging both sides of JP1 would tie a bench supply to the USB source, so it ships with one shunt, on VBUS. The shunt is not on the JLC BOM and is ordered separately.
 - **1.1 V from 3.3 V:** the TPS563257's UVLO (rising 2.8–3.0 V, falling ≤2.8 V) leaves ≥200 mV of margin on a worst-case 3.2 V rail. It has its own 10 µF at its VIN pin.
 - **Input capacitance:** U80 and U74 share 2 × 4.7 µF + 2 × 100 nF on VCC, which keeps the total within USB's 10 µF limit on VBUS. TI asks for more than 10 µF per device; this is an accepted risk.
 - **Input transients:** USB-C sources always start at 5 V and slew to 9 V under PD control, so the 17 V input rating has ample margin.
@@ -434,6 +453,9 @@ USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected 
 
 - **100 nF per IC supply pin.** Extra capacitors only where a datasheet asks for them.
 - **Bulk capacitance is pooled per rail, not placed per pin.** Where a datasheet asks for 10 µF, a 2.2 µF beside the pin is fitted and the rest is shared with the rail's distributed bulk.
+- **Buck output filters are sized on effective capacitance** (after DC-bias derating), as TI's Table 8-2 is. The 5 V output uses 2 × 10 µF (C39, C114) in place of TI's 22 µF: both give about 9 µF effective at 5 V.
+- **LP5907:** 2.2 µF on input and output (C18, C19), not 1 µF. The datasheet requires at least 0.7 µF effective over all conditions, which a 1 µF X5R at 3.3 V can miss in the worst case.
+- **STM32 VDDA/VREF+:** 2.2 µF (C13). ST asks for 1 µF; more is fine while VREFBUF is unused (VREFBUF accepts only 0.5–1.5 µF).
 - **FPGA:** a top-side ring, with 8 × 100 nF + 5 × 10 µF on VCCIO (13 pins), 6 × 100 nF + 3 × 10 µF on VCC (1.1 V) and 2 × 100 nF + 4.7 µF on VCCAUX.
 - **Connector power pins get bulk capacitance only** (10 µF), to buffer powered or passive devices plugged into them. No 100 nF is fitted at connectors.
 
@@ -441,7 +463,7 @@ USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected 
 
 - **Negotiation:** the STM32's built-in UCPD peripheral negotiates USB PD and requests 9 V.
 - **Cold start:** with no battery, every plug-in is a dead-battery start. PA9 and PA10 (UCPD1_DBCC1/2) are linked to CC1 and CC2, so the STM32 presents its 5.1 kΩ Rd while unpowered and the source applies 5 V. Firmware must program UCPD as a sink before setting `UCPD1_DBDIS`, or Rd disappears and the source removes VBUS.
-- **CC protection:** ESD diodes only, plus 220 pF 25 V on each CC line for the USB PD capacitance range (200–600 pF, including about 60–90 pF from the STM32). The CC pins connect directly to the connector, so a CC-to-VBUS short at 9 V (for example, during an angled unplug) can damage the STM32. This risk is accepted.
+- **CC protection:** ESD diodes only, plus 220 pF 50 V on each CC line for the USB PD capacitance range (200–600 pF, including about 60–90 pF from the STM32). The CC pins connect directly to the connector, so a CC-to-VBUS short at 9 V (for example, during an angled unplug) can damage the STM32. This risk is accepted.
 - **Diagnostics:** none beyond USB. The firmware is simple, and there is no VBUS sense divider: the UCPD contract state is enough.
 - **Debugger caveat:** if the STM32 is halted in a debugger, the source may hard-reset the PD contract, dropping the console 5 V rail. The console then resets cleanly via PG.
 
@@ -451,7 +473,7 @@ USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected 
 - **Green:** PG high. Console running.
 - **Dark:** the FPGA is not yet configured.
 
-Each colour is driven from its own FPGA pin (A7 red, B7 green) through 1 kΩ. Check the chosen LED's forward voltage: a green with about 3 V Vf would get only about 0.3 mA.
+Each colour is driven from its own FPGA pin (A7 red, B7 green) through 270 Ω (R58, R61), giving about 5 mA per colour from a forward voltage of about 1.9 V. The LED is a red / **yellow-green** pair, not red / emerald green: emerald greens need 2.8–3.4 V and would barely light from a 3.3 V pin. 5 mA is well inside the LED's 30 mA and the ECP5's 8 mA LVCMOS33 drive, and keeps bank 0 far below Lattice's 10 mA-per-I/O average (electromigration) limit alongside the HDMI pins. Final brightness is to be judged on the prototype; gateware PWM can dim it.
 
 ## ESD protection
 
@@ -461,7 +483,7 @@ Each colour is driven from its own FPGA pin (A7 red, B7 green) through 1 kΩ. Ch
 - **Cartridge audio:** SL1 and SR1 each get a bidirectional H3V3L10B (3.3 V working, 3.5–5.5 V breakdown, 10 pF typical / 20 pF max, ≤0.5 µA leakage), because the audio swings below 0 V. The ADC's 3 Vpp full scale is ±1.5 V at the pin, well inside the 3.3 V working voltage.
 - **Unused 32X pins (b12–b15):** unconnected and unprotected, as nothing is attached.
 - **HDMI:** covered by the TPD12S016.
-- **USB VBUS and the debug input:** one SMAJ10A (D4) on VCC, after JP1 and SW4, for surges as well as ESD. It protects whichever input JP1 selects. With SW4 off nothing downstream is powered, so the unprotected stretch from the connector to SW4 carries no risk.
+- **USB VBUS and the debug input:** one SMAJ10A (D4) on `POWER_IN`, after JP1 and ahead of Q6, for surges as well as ESD. It protects whichever input JP1 selects and clamps whether Q6 is on or off, so it also protects Q6. A bench supply connected backwards to J4 forward-biases D4, and the supply's current limit takes over.
 - **Power pins (cartridge +5 V, controller pin 5, HDMI +5 V):** no diode. A rail's own capacitance absorbs an ESD pulse: an 8 kV IEC discharge carries about 1.2 µC (150 pF × 8 kV), which raises 10 µF by about 0.12 V.
 - **Connector shells:** DE-9 and USB-C shells are grounded.
 - **Accepted risk:** a CC-to-VBUS short at 9 V exceeds the diodes' 6.5–8.5 V breakdown, so the diodes don't protect against it.
@@ -496,35 +518,55 @@ Each colour is driven from its own FPGA pin (A7 red, B7 green) through 1 kΩ. Ch
 
 ## Component choices
 
-Authoritative manufacturer part numbers and LCSC numbers for every component, and specifications for passives (voltage, dielectric, tolerance, inductor saturation current), are the next design phase.
+Part numbers, LCSC numbers and footprints are being assigned in the schematic (the `LCSC` and `Footprint` fields are authoritative). Passives and connectors chosen so far are listed under Passive parts below; inductors, the remaining discretes, switches and some connectors are still open.
 
 | Function | Part | Notes |
 |---|---|---|
-| FPGA | Lattice **LFE5U-25F-6BG256C** | ECP5, 24K LUTs, ~1 Mbit block RAM, 197 I/O, caBGA-256 (0.8 mm). The design target: the smallest and slowest part supported. Gateware is built and timed for it (`SPEED := 6`). See FPGA alternates. |
+| FPGA | Lattice **LFE5U-25F-6BG256C** | ECP5, 24K LUTs, ~1 Mbit block RAM, 197 I/O, caBGA-256 (0.8 mm). The design target: the smallest and slowest part supported. Gateware is built and timed for it (`SPEED := 6`). See FPGA alternates. **The prototype is built with the LFE5U-25F-7BG256I (LCSC C1550762)** because the -6BG256C (C1521614) is out of stock; U68's value and LCSC field deliberately differ. Footprint `Package_BGA:BGA-256_14.0x14.0mm_Layout16x16_P0.8mm_Ball0.45mm_Pad0.32mm_NSMD`, checked against Lattice FPGA-DS-02053 §93 (14 mm, 0.8 mm pitch, 0.45 mm nominal ball, MO-275 JJAB-2) and all 256 ball names. |
 | VRAM + 68000 work RAM | ISSI **IS61WV25616BLL-10TLI** | 256K×16 async SRAM, 10 ns, 3.3 V, TSOP-II-44. LCSC C53825. 128 KB used of 512 KB, on a dedicated 39-pin bus (A0–A17, D0–D15, /CE /OE /WE /UB /LB). Keep the 256K×16 rather than 64K×16: see Main memory. |
 | Configuration flash | Winbond **W25Q32JVZPIQ** | 4 MB QSPI NOR, WSON-8 6×5 mm, QE = 1 factory-fixed. Exposed pad (3.40 × 4.30 mm) unconnected internally; tied to GND. |
 | Programming / PD MCU | ST **STM32G431CB** | 48-pin, 128 KB flash, 32 KB RAM. USB FS on PA11/PA12 (crystal-less), UCPD CC1/CC2 on PB6/PB4, dead-battery DBCC on PA9/PA10, ROM DFU bootloader. |
 | Cartridge audio ADC | TI **PCM1808PWR** | 24-bit stereo ADC, 5 V analogue / 3.3 V digital, slave mode, I2S. TSSOP-14. |
 | Signal ESD | TI **TPD1E05U06DPY** (×71) | One per external signal pin. Single-line, 5.5 V working, 6.5 V minimum breakdown, 0.42 pF, ±12 kV contact / ±15 kV air (IEC 61000-4-2). X1SON 0402; use TI's DPY land pattern. |
-| Audio ESD | **H3V3L10B** (×2) | Hongjiacheng. Bidirectional, 3.3 V working, 3.5–5.5 V breakdown, clamps at 6 V (1 A) and 11 V (8 A, 8/20 µs), ±30 kV IEC 61000-4-2, 20 pF max. DFN1006-2L. |
+| Audio ESD | **H3V3L10B** (×2) | Hongjiacheng (LCSC C20615781), footprint `Diode_SMD:D_SOD-882`. Bidirectional, 3.3 V working, 3.5–5.5 V breakdown, clamps at 6 V (1 A) and 11 V (8 A, 8/20 µs), ±30 kV IEC 61000-4-2, 20 pF max. DFN1006-2L. |
 | 5 V, 3.3 V and 1.1 V regulators | TI **TPS563257DRLR** (×3) | 3–17 V input, 3 A synchronous buck, 1.2 MHz, forced continuous mode, precision EN, open-drain PG, SOT-563. D-CAP3: output capacitors and feed-forward per datasheet tables. |
+| Buck inductors | Sunlord **MWSA0503S** (×3), molded metal-alloy, shielded, 5.4 × 5.2 × 3 mm | L1, L2: **MWSA0503S-2R2MT** (2.2 µH, LCSC C408408); L3: **MWSA0503S-1R0MT** (1.0 µH, LCSC C408355). JLC lists 7 A / 7 A and 29 mΩ for the 2.2 µH, 10 A / 8.5 A and 14 mΩ for the 1.0 µH, against a worst-case overload peak of about 6.2 A (see Power); molded alloy saturates softly. One footprint for all three, `Inductor_SMD:L_Sunlord_MWSA0503S`, so the three buck layouts are identical. Confirm which listed figure is Isat and which is Irms on Sunlord's datasheet. |
 | 2.5 V regulator | TI **LP5907MFX-2.5** | LDO from 3.3 V, <100 mA |
-| Input selector | Solder jumper **JP1** (3-pad) | VBUS (default) or debug input to SW4 |
-| Input TVS | **SMAJ10A** (×1, D4, on VCC after SW4) | Littelfuse, unidirectional, 400 W. 10 V standoff (above 9 V PD's 9.45 V), 11.1–12.3 V breakdown, 17.0 V clamp at 23.5 A (confirmed on the datasheet), which just meets the bucks' 17 V rating. |
-| Polyfuses | **nSMD020-30V** (×2), **1 A** (×1) | nSMD020-30V (Sea & Land / Alpha-Top): 0.20 A hold, 0.46 A trip, 30 V, 0.35 Ω minimum and 2.7 Ω maximum one hour after reflow, so up to about 0.5 V drop at the hold current; controller pin 5 ×2. 1 A hold on the cartridge +5 V (part to be chosen: low resistance). |
+| Input selector | **JP1**, 1×3 2.54 mm header, XFCN PZ254V-11-03P (LCSC C2937625) | VBUS (default) or debug input to Q6. Pin 2 is the common. Jumper shunt ordered separately. Footprint `PinHeader_1x03_P2.54mm_Vertical`. |
+| Debug power input | **J4**, 1×2 2.54 mm header, XFCN PZ254V-11-02P (LCSC C492401), not fitted | Pin 1 GND, pin 2 +9V. Footprint `PinHeader_1x02_P2.54mm_Vertical`. |
+| Power switch FET | AOS **AO3407A** (LCSC C15155, Q6) | P-channel, −30 V, 4.3 A, 48 mΩ at −10 V, ±20 V gate, SOT-23 (`Q_PMOS_GSD`: 1 G, 2 S, 3 D). About 50 mW at 1 A. Gate pull-up R148 (47k) to the source. |
+| Input TVS | **SMAJ10A** (×1, D4, on `POWER_IN`, ahead of Q6) | Diodes Inc. SMAJ10A-13-F (LCSC C134939), footprint `Diode_SMD:D_SMA`, pad 1 (cathode) on `POWER_IN`. Unidirectional, 400 W. 10 V standoff (above 9 V PD's 9.45 V), 11.1–12.3 V breakdown, 17.0 V clamp at 23.5 A (confirmed on the datasheet), which just meets the bucks' 17 V rating. |
+| Polyfuses | **nSMD020-30V** (×2), **1 A** (×1) | nSMD020-30V, TECHFUSE (LCSC C69680), footprint `Fuse:Fuse_1206_3216Metric` (KiCad's pads leave a 1.55 mm gap where the datasheet suggests 2.0 mm; either solders): ratings identical to the Sea & Land / Alpha-Top datasheet: 0.20 A hold, 0.46 A trip, 30 V, 0.35 Ω minimum and 2.7 Ω maximum one hour after reflow, so up to about 0.5 V drop at the hold current; controller pin 5 ×2. Cartridge +5 V (F1): TECHFUSE **nSMD100-16V** (LCSC C70082), same maker and footprint: 1.0 A hold, 1.8 A trip, 16 V, 55–270 mΩ, so at most about 80 mV at typical cart currents and 0.27 V at 1 A. TECHFUSE and Alpha-Top (Sea & Land Alliance) are the same company. |
 | Cartridge level shifting | TI **SN74ALVC164245DGG** (×3) | TTL-level B inputs, VOH ≥ 4.3 V (VCCB 4.5 V, −100 µA). VCCA 2.3–3.6 V, VCCB 3–5.5 V; TI's power-up order (VCCA first) is met because 3.3 V always precedes 5 V. Data (U72), VA1–VA16 (U83), the rest (U71). TSSOP-48. |
-| Cartridge open-drain lines | **BSS138** (×5) | /DTACK, /MRES, /VRES, /CART, /M3. |
+| Cartridge open-drain lines | onsemi **BSS138** (×5, LCSC C52895) | /DTACK, /MRES, /VRES, /CART, /M3. SOT-23, 1 G, 2 S, 3 D. |
 | Controller port level shifting | TI **SN74LVC1T45DBV** (×14) | One per signal pin, each with its own DIR from the FPGA. |
 | HDMI protection and interface | TI **TPD12S016** | ESD, +5 V switch, HPD/DDC level shifting |
 | HDMI TMDS series resistors | **270 Ω** 1% (×8: R56, R57, R59, R60, R62–R65) | Set the TMDS swing with the sink's 50 Ω termination; see HDMI |
-| Cartridge connector | 64-pin (2×32) 2.54 mm card edge | Aftermarket Genesis replacement slot, or a generic 2×32 edge connector checked against cart PCB thickness. Through-hole. |
-| Controller connectors | DE-9 male ×2 | Through-hole, metal shell grounded. Check a real Sega controller fits. |
-| HDMI connector | Type A | |
-| USB connector | USB-C receptacle | Both D+/D− pairs connected; CC direct to the STM32 UCPD and DBCC pins |
-| Clocking | **One** 27 MHz 3.3 V CMOS oscillator, Abracon **ASE** series (Y1) | The only clock source, on PCLK ball E8 (PCLKT1_1). One ECP5 PLL makes the 135 MHz TMDS, 54 MHz console and 27 MHz pixel clocks (see Clocking). One 100 nF at the pins, no ferrite bead. |
-| Power LED | Bi-colour, common cathode | FPGA-driven from PG |
-| Switches | Power (SW4), console reset (SW1), STM32 reset (SW2), STM32 DFU (SW3) | |
+| Cartridge connector | WingTAT **ED64MEBGFBK** (LCSC C5242019) | 2×32, 2.54 mm, rows 5.08 mm, 1.57 mm card (Mega Drive carts are 1.6 mm), two Ø3.5 mm mounting ears 95.88 mm apart. Gold flash (1 µin) contacts; no thicker plating is stocked. EDAC 345/395-064-520-202 (Ø3.25 mm ears, flush; about £10 at DigiKey) is dimensionally interchangeable. Project footprint `genesis:CardEdge_MegaDrive_2x32_P2.54mm_Ears` fits both, with Ø3.4 mm NPTH ear holes at ±47.94 mm and copper keep-outs for M3 hardware; EDAC's STEP model is attached. WingTAT's ears sit about 5.4 mm above the board (spacer or case boss needed); EDAC's are flush. |
+| Controller connectors | Foxconn **DT10121-H4W2-4F** DE-9 male right-angle ×2 (LCSC C426221, J5, J6) | Board locks, no screw locks (suits Sega pads), shell grounded, 2 A contacts, gold-flash contacts rated 500 cycles (DT10123 is the 30 µin version, if stocked). Footprint `Connector_Dsub:DSUB-9_Pins_Horizontal_P2.77x2.84mm_EdgePinOffset7.70mm_Housed_MountingHolesOffset9.12mm`, matching Foxconn's layout: 2.77 / 2.84 mm pins, board-lock holes 24.99 mm apart, 1.42 mm behind the 6–9 row. Place the PCB edge 8.08 mm from the 6–9 row per Foxconn, not at the footprint's 7.70 mm edge line. Check a real Sega controller fits. |
+| HDMI connector | Molex **208658-1001** (LCSC C916313), type A, right-angle SMD (`datasheets/2086581051_sd.pdf`, which covers the whole 208658 family) | Footprint `Connector_Video:HDMI_A_Molex_208658-1001_Horizontal`, matching Molex's recommended layout: 19 pads 0.30 × 2.60 mm at 0.5 mm pitch, shell slots 14.50 mm apart (0.90 × 2.70 mm rear, 0.90 × 1.70 mm front, 5.96 mm apart), PCB edge 9.55 mm from the rear slots. 0.76 µm gold contacts; the -1051 is the gold-flash version on the same footprint. |
+| USB connector | Molex **217179-0001** (LCSC C3197684), 16-pin USB 2.0 Type-C receptacle (`datasheets/2171790001_sd.pdf`) | Both D+/D− pairs connected; CC direct to the STM32 UCPD and DBCC pins. Project footprint `genesis:USB_C_Receptacle_Molex_217179-0001`, drawn from Molex's recommended layout: signal pads as the common 16-pin pattern (1.15 mm long), shell slots 8.64 mm apart with the rear pair 4.00 mm behind the front (0.6 × 1.4 mm front / 0.6 × 1.8 mm rear holes), no locating pegs. KiCad's G-Switch GT-USB-7010ASV footprint does not fit it (rear legs 4.20 mm, different slot sizes). SBU pads A8/B8 are unconnected. 5 A, 10,000 cycles. No 3D model yet. |
+| Clocking | **One** 27 MHz CMOS oscillator, Epson **SG2016CAN** 27.000000 MHz TJGA (X1G0048010061, LCSC C881727, Y1) | 2.0 × 1.6 mm, 1.6–3.63 V, ±50 ppm over −40 to 85 °C (HDMI allows ±0.5%), 15–16 ps p-p jitter, 3 ms start-up. Pin 1 is standby (high or open runs), tied to +3V3. Footprint `Crystal:Crystal_SMD_SeikoEpson_FA128-4Pin_2.0x1.6mm`: KiCad has no SG2016 oscillator footprint, and this one matches Epson's recommended land (0.90 × 0.80 mm pads at 1.40 × 1.10 mm) to within 0.05 mm, with the same pin order. The only clock source, on PCLK ball E8 (PCLKT1_1). One ECP5 PLL makes the 135 MHz TMDS, 54 MHz console and 27 MHz pixel clocks (see Clocking). One 100 nF at the pins, no ferrite bead. |
+| Power LED | Lite-On **LTST-C295KGKRKT** (LCSC C364568, D1) | Red (631 nm) and yellow-green (571 nm) in one 1.6 × 0.8 mm package, as two separate LEDs: green anode 1 / cathode 3, red anode 2 / cathode 4; both cathodes to GND (symbol `LED_Dual_AAKK`). Vf 2.0 V typ, 2.4 V max at 20 mA; 35 / 45 mcd at 20 mA. Footprint `LED_SMD:LED_LiteOn_LTST-C295K_1.6x0.8mm`, matching Lite-On's suggested pads (0.4 × 0.5 mm at ±0.35 / ±0.6 mm). Top-view: needs a light pipe or window above it. FPGA-driven from PG. |
+| Switches | SW4 power: ALPS **SPPH410100** (latching, LCSC C370973); SW1 reset: ALPS **SPPH410200** (momentary, LCSC C202363); SW2, SW3: Omron **B3U-1000P** (LCSC C231329) | SPPH4: 0.1 A 30 V max, 50 µA 3 V min, 10,000 operations, 2.2 mm travel; project footprint `genesis:SW_ALPS_SPPH4_Vertical` (both poles paralleled: pad 1 = commons 2/5, pad 2 = NO contacts 3/6, NC 1/4 unconnected; location lug on the NO side). B3U: `Button_Switch_SMD:SW_SPST_B3U-1000P`. |
 | Mounting holes | 6 (H1–H6) | Placeholders: style and quantity to be decided at layout. |
+
+### Passive parts
+
+All chosen to be JLCPCB parts; X5R/X7R MLCCs, ±1% thick-film resistors.
+
+| Part | LCSC | Used for | Why |
+|---|---|---|---|
+| 100 nF 50 V X7R 0402 (Samsung CL05B104KB54PNC) | C307331 | All 75 decoupling caps | One part everywhere; 50 V covers the VCC caps (9 V, transients to the 17 V TVS clamp) |
+| 10 µF 25 V X5R 0805 (Samsung CL21A106KAYNNNE) | C15850 | All bulk on +5V, +3V3, +1V1; PCM1808 VREF; audio coupling | No 10 µF sits above 5 V. 0805 per TI's buck table; keeps about 4–5 µF at 5 V, 6 µF at 3.3 V |
+| 4.7 µF 25 V X5R 0805 (Samsung CL21A475KAQNNNE) | C1779 | Buck inputs on VCC (C22, C37); C12; VCCAUX (C91) | 25 V for the 9 V input and its transients. At 9 V each keeps only about half its value, so decision 2's shortfall is larger than the nominal figures suggest |
+| 2.2 µF 16 V X5R 0603 (Samsung CL10A225KO8NNNC) | C23630 | ALVC and PCM1808 supplies; LP5907 in/out; STM32 VDDA | All on 5 V or less |
+| 220 pF 50 V X7R 0402 | C1530 | USB CC lines | |
+| 33 pF / 22 pF 50 V C0G 0402 | C1562 / C1555 | 3.3 V / 5 V buck feed-forward | |
+| Resistors, 0402 ±1% | various (UniOhm 0402WGF series) | Everything except below | |
+| 220 Ω 0805 ±1% (UniOhm 0805W8F2200T5E) | C17557 | Controller series resistors | 125 mW for a sustained 5 V-vs-0 V fight (about 116 mW) |
+
+There is no 1 µF capacitor on the board: every former 1 µF position moved to 2.2 µF or 10 µF.
 
 ### FPGA alternates
 
@@ -585,10 +627,10 @@ Recorded from the full schematic review. Each was considered and either accepted
 | 6 | Front panel | Power switch and console reset button. **Done.** |
 | 7 | STM32–FPGA link | None: no planned use. Skipped to reduce layout complexity. |
 | 8 | Mounting holes | 6 placeholders. Style and quantity are decided at layout. |
-| 9–11 | Passive specifications, MPNs, LCSC numbers, capacitor voltage ratings, inductor saturation current | **Deferred to the next phase.** |
+| 9–11 | Passive specifications, MPNs, LCSC numbers, capacitor voltage ratings, inductor saturation current | **Done**, except the mounting holes (at layout). |
 | 12 | Rail capacitance | Pooled bulk per rail, as engineered. **Accepted.** |
 | 13 | Connector power pins | Bulk capacitance only, no 100 nF. **Accepted.** |
-| 14 | Input OR diodes | Removed. A solder jumper JP1 selects VBUS or the debug input. **Done.** |
+| 14 | Input OR diodes | Removed. A header JP1 with a shunt selects VBUS or the debug input. **Done.** |
 | 15 | ALVC164245 /OE pull-down | **Kept.** 3.3 V always rises first and DIR defaults inbound. A pull-up would have to be ≤4.7k to beat the ECP5's configuration pull-down. |
 | 16 | Cartridge +5 V | One 1 A polyfuse feeding both pins. **Done**; confirm with measured cart current. |
 | 17 | HDMI TMDS | Output 480p60 (NTSC) / 576p50 (PAL) at 27 MHz, so 270 Mb/s per lane, within the -6 datasheet limits. TMDS driven directly from bank 0 (hot-socket rated, clamp off) through 270 Ω series resistors into the sink's 50 Ω termination. Transmitter chips rejected on cost and stock (ADV7513, IT66121) or for lacking audio (TFP410); DP159-class redrivers not needed at this rate. The high-level tolerance, the board-off leakage maximum and back-powering an unpowered TV are **accepted deviations**, the last handled by a gateware receiver-sense rule. **Done.** |
@@ -599,8 +641,8 @@ Recorded from the full schematic review. Each was considered and either accepted
 ## Open items
 
 - **HDMI on the prototype:** measure the TMDS swing and eye at the connector into a real sink, and confirm 255 Ω vs 270 Ω. Check that the receiver-sense read-back distinguishes powered and unpowered sinks.
-- **Cartridge +5 V polyfuse:** choose the 1 A part, and measure flash cart and SVP cart current draw on prototype hardware.
-- **Next phase:** MPNs, LCSC numbers and passive specifications for every component; footprints for every part still without one.
+- **Cartridge +5 V polyfuse:** F1 is a 1 A hold part (nSMD100-16V); measure flash cart and SVP cart current draw on prototype hardware to confirm the rating.
+- **Parts still to assign:** mounting holes (H1–H6), at layout.
 - **Deferred schematic items:** test points on VCC, +5V, +3V3, +2V5, +1V1 and PG_5V; reference re-annotation.
 - **FPGA docs are out of date:** `fpga/docs/pin-constraints.md` and `constraints/pinmap.csv` predate the bank re-plan (HDMI to bank 0, controllers to bank 1, cartridge bus to banks 6/7, clock to E8). They also put `flash_cs_n` on R8 (it is N8), describe FET-gate `cart_mres_drive`/`cart_vres_drive` (now open-drain through BSS138) and the old transceiver controls, and lack CART_DIR, the audio ADC and the reset button. Regenerate both from the netlist.
 - Synthesize the MiSTer Genesis core (fx68k, T80, VDP, sound) against the LFE5U-25F to confirm fit. Fallbacks: the pin-identical LFE5U-45F (supply is limited), or two 25Fs split into system and video halves.

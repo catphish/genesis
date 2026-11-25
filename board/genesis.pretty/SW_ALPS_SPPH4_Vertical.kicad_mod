@@ -1,0 +1,282 @@
+(footprint "SW_ALPS_SPPH4_Vertical"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "ALPS SPPH4 series vertical push switch with location lug (SPPH410100 latching, SPPH410200 momentary), 6 terminals 2.5 mm pitch, rows 5.4 mm, per ALPS SPPH4 datasheet. Both poles paralleled for a 2-pin symbol: pad 1 = commons (ALPS 2, 5), pad 2 = normally-open contacts closed when pressed/latched (ALPS 3, 6); ALPS 1 and 4 (normally closed) are unconnected. The location lug sits on the NO (3/6) side.")
+	(tags "ALPS SPPH4 SPPH410100 SPPH410200 push switch latching")
+	(property "Reference" "REF**"
+		(at 0 -4.4 0)
+		(layer "F.SilkS")
+		(uuid "3b6ce612-8a08-48bf-817d-7f85f2c21036")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "SW_ALPS_SPPH4_Vertical"
+		(at 0 4.4 0)
+		(layer "F.Fab")
+		(uuid "dcdfbe02-3ccb-403c-ac92-8ac68b4500fd")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "https://tech.alpsalpine.com/e/products/category/push/sub/02/series/spph4/"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "a863df9a-8cb2-454f-9a5e-bef5fc0c591f")
+		(hide yes)
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "ALPS SPPH4 vertical push switch, poles paralleled"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "aebd6c4a-9d15-4b50-979c-bc89dcefa1a1")
+		(hide yes)
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_line
+		(start -4.25 -3.25)
+		(end 4.25 -3.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "250036e1-805f-48e1-97dc-5603b75484da")
+	)
+	(fp_line
+		(start 4.25 -3.25)
+		(end 4.25 3.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "8708a160-86fe-40cb-b2d9-4dbe22d2aa59")
+	)
+	(fp_line
+		(start 4.25 3.25)
+		(end -4.25 3.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "ae0bc741-1eff-4ee3-b997-6def20f68aa1")
+	)
+	(fp_line
+		(start -4.25 3.25)
+		(end -4.25 -3.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "987cc775-a9f0-4698-8366-32b391be4db9")
+	)
+	(fp_line
+		(start -2 -1.65)
+		(end 2 -1.65)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "9596ddf4-80d1-4cfc-ab44-051aff7dcb0d")
+	)
+	(fp_line
+		(start 2 -1.65)
+		(end 2 1.65)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "6dd2b3ed-e67a-4063-adc2-6a85f76566b8")
+	)
+	(fp_line
+		(start 2 1.65)
+		(end -2 1.65)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "0df53618-8a4b-42dd-a187-4d1df2bde9ee")
+	)
+	(fp_line
+		(start -2 1.65)
+		(end -2 -1.65)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "bd2598d7-9de7-4383-9fe8-567c1abeda3b")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "b666fa73-d1f9-4bb2-bd63-9f62a69294d2")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.12)
+			)
+		)
+	)
+	(fp_line
+		(start -4.36 -3.36)
+		(end 4.36 -3.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "f859402c-f979-40a2-94a6-d1ff4327639c")
+	)
+	(fp_line
+		(start 4.36 -3.36)
+		(end 4.36 3.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "9eff633b-4a93-489e-971c-ef9973317429")
+	)
+	(fp_line
+		(start 4.36 3.36)
+		(end -4.36 3.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "2e3c1a6d-0036-4403-9629-8e3230563a55")
+	)
+	(fp_line
+		(start -4.36 3.36)
+		(end -4.36 -3.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "ff2e96ed-b8d4-40d2-9260-7a72d9373869")
+	)
+	(fp_line
+		(start -4.75 -3.75)
+		(end 4.75 -3.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "02013516-f8be-4d76-b029-74339cc4bd46")
+	)
+	(fp_line
+		(start 4.75 -3.75)
+		(end 4.75 3.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "372079fd-d012-4c2b-a291-fe8714025b4e")
+	)
+	(fp_line
+		(start 4.75 3.75)
+		(end -4.75 3.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "7db35ad1-9325-4b59-bfd5-59919f4a9d48")
+	)
+	(fp_line
+		(start -4.75 3.75)
+		(end -4.75 -3.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "e2eedcb9-54ab-43fe-b890-95f49fd442e9")
+	)
+	(pad "" thru_hole circle
+		(at -2.5 -2.7)
+		(size 1.6 1.6)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "6f03dbf3-c763-4804-a4b3-9baccb8e6dad")
+	)
+	(pad "" thru_hole circle
+		(at -2.5 2.7)
+		(size 1.6 1.6)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "d57a3607-d94c-4287-8e9c-664a365eb51f")
+	)
+	(pad "1" thru_hole circle
+		(at 0 -2.7)
+		(size 1.6 1.6)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "c65ba0ff-0d21-472d-b0b2-d44e6e5bdf73")
+	)
+	(pad "1" thru_hole rect
+		(at 0 2.7)
+		(size 1.6 1.6)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "bab88b3e-5a0e-4f51-893a-698f05a5196e")
+	)
+	(pad "2" thru_hole circle
+		(at 2.5 -2.7)
+		(size 1.6 1.6)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "838e4dca-9d91-4edf-842e-6f7c18018cbc")
+	)
+	(pad "2" thru_hole circle
+		(at 2.5 2.7)
+		(size 1.6 1.6)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "ae039c9d-3422-42bd-846f-6e4e59b77915")
+	)
+	(pad "" np_thru_hole circle
+		(at 3 0)
+		(size 1.2 1.2)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(uuid "45b43453-7a05-4f8e-a4a6-1034305b5d04")
+	)
+	(embedded_fonts no)
+)
