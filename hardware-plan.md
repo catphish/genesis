@@ -172,33 +172,36 @@ console output in Mode 4 is in half 1, and the lines that must stop being
 driven in Mode 4 (VA21–VA23) are in half 2, whose other lines are unused in
 Mode 4.
 
-#### Idle state: enabled, inbound, pulled up
+#### Idle state: disabled, inbound, pulled up
 
-- **Every /OE and DIR has a 10 kΩ pull-down**, so with the FPGA unconfigured
-  all three devices are enabled and inbound.
+- **Each /OE net has a 4.7 kΩ pull-up to +3V3** (R77 `CART_DATA_OE`, R79
+  `CART_OE`). With the FPGA unconfigured, all three devices are therefore
+  disabled, which follows TI's power-up guidance (SCAS416Q §10: power VCCA
+  first, tie /OE to VCCA so it ramps with it).
+- **Value:** 4.7 kΩ, not 10 kΩ, because the pull-up must beat the ECP5's
+  configuration pull-down. At the 150 µA worst case it leaves /OE at about
+  2.6 V, above the 2.0 V VIH. 10 kΩ would leave only 1.8 V.
+- **Each DIR has a 10 kΩ pull-down** (R82, R84, R87), so the devices default
+  to inbound, which is TI's "keep DIR low".
 - **Every slot-side line has a 47 kΩ pull-up to +5 V** (48 lines).
 - The ALVC's input stages are always active on both ports, so nothing may
-  float. With this arrangement nothing does: the slot side is pulled high,
-  and the FPGA side is driven high by the transceiver.
+  float, and nothing does:
+  - The slot side is held high by its pull-ups.
+  - The FPGA side is held low by the ECP5's weak pull-downs (30–150 µA)
+    during power-up and configuration, and is then driven by the gateware.
 - The cartridge sees an idle bus (all strobes high) from power-on, through
   configuration and through any JTAG reconfiguration, which is how the
   original's bus looks with the 68000 in reset.
-- This agrees with the ECP5, whose user I/O sit tri-stated with weak
-  pull-downs (30–150 µA) during configuration.
-
-Note that TI recommends pulling /OE **up** to VCCA during power-up. The
-pull-down is a deliberate choice, made safe by the power sequence: 3.3 V
-always comes up first (the 5 V rail needs PD negotiation by the 3.3 V-powered
-STM32), and DIR defaults to inbound, so the only outputs enabled are the A
-side, driving FPGA pins that are inputs. The pull-down is kept (decision 15).
+- With the 5 V rail off (a 5 V-only source), both ports stay high-impedance
+  rather than driving the A side from an unpowered B side.
 
 #### Gateware rules for the transceivers
 
 - **/OE must be inactive while DIR changes** (no break-before-make). Turning
   the data bus around is therefore /OE high, change DIR, /OE low: at least two
   54 MHz cycles (46–56 ns), comfortably inside the 521 ns bus cycle.
-- **At start-up**, raise /OE, set the output banks outbound, then lower /OE
-  before driving any A-side line.
+- **At start-up**, /OE is already high from its pull-up. Drive it high, set the
+  output banks outbound, then lower /OE before driving any A-side line.
 - **U71 half 2 goes outbound only once /M3 confirms Mega Drive mode** (see
   below).
 - **Pulse /VRES once at start-up.**
@@ -438,6 +441,11 @@ USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected 
 - **Inductor current rating:** set by the TPS563257's overcurrent limit, not the load. The limit acts on *valley* current, up to 5.0 A (3.1 A min, 4.1 A typ), so in an overload or short the peak is that plus the ripple: about 6.2 A for L1 (ripple 0.95 A nominal, 1.2 A at −20% L, from 9 V), 6.1 A for L2 (0.84 / 1.05 A) and 5.8 A for L3 (0.61 / 0.76 A, from 3.3 V). Hence Isat ≥ about 6.5 A for all three, and ≥3 A thermal (the buck's rating); normal loads are about 1 A (3.3 V), 1.5 A (5 V) and 0.5 A (1.1 V).
 - **3.3 V enable:** 100k/47k on EN: on at VCC ≈ 3.7 V, off at ≈ 3.1 V.
 - **Console 5 V enable:** 53.6k/10k on EN: on at VCC ≈ 7.6 V, off at ≈ 6.4 V. With a 5 V-only source the rail stays off; everything else powers up and programming works.
+- **5 V waits for 3.3 V:** U74's open-drain PG drives U80's EN node (net `5V_EN`), wired-AND with the divider.
+  - PG holds EN low until 3.3 V reaches 90% of its setpoint, plus a 1 ms delay. PG sinks 4 mA at 0.4 V, well below EN's 1.0 V off threshold.
+  - Once released, the divider sets the threshold as before. EN never exceeds about 2.7 V even at 17 V, within PG's 6 V maximum.
+  - This guarantees the ALVC164245's required order, VCCA (3.3 V) first, for every source, including a 9 V bench supply on J4, which would otherwise start both bucks together.
+  - A 3.3 V fault (undervoltage or overvoltage) also drops 5 V.
 - **Input selection, not OR-ing:** JP1 connects either VBUS or the debug input, never both, so there is no diode drop and neither source can back-feed the other. Bridging both sides of JP1 would tie a bench supply to the USB source, so it ships with one shunt, on VBUS. The shunt is not on the JLC BOM and is ordered separately.
 - **1.1 V from 3.3 V:** the TPS563257's UVLO (rising 2.8–3.0 V, falling ≤2.8 V) leaves ≥200 mV of margin on a worst-case 3.2 V rail. It has its own 10 µF at its VIN pin.
 - **Input capacitance:** U80 and U74 share 2 × 4.7 µF + 2 × 100 nF on VCC, which keeps the total within USB's 10 µF limit on VBUS. TI asks for more than 10 µF per device; this is an accepted risk.
@@ -445,8 +453,8 @@ USB-C VBUS (5 V, or 9 V after PD negotiation) or the debug input J4 is selected 
 - **No VBUS overvoltage protection:** the TVS clamps short surges only. A faulty charger holding VBUS above the bucks' 17 V rating would destroy them. This risk is accepted.
 - **Power-good:** the console 5 V buck's PG output goes to FPGA ball A8, with a 10 kΩ pull-up to 3.3 V (see Gateware integration work).
 - **Polyfuses:** one 200 mA (nSMD020) on each controller port's pin 5, and **one 1 A polyfuse (F1) feeding both cartridge +5 V pins** (J1 a2 and a31 joined behind it). A single fuse avoids two parallel polyfuses sharing current unevenly and tripping in cascade. Confirm the rating by measuring flash and SVP carts on the prototype.
-- **Partial power-down:** with the 5 V rail off, the 1T45s isolate the controller ports (VCC isolation), and the ALVC164245s idle inbound.
-- **No sequencing constraints:** the ECP5 has none between its rails.
+- **Partial power-down:** with the 5 V rail off, the 1T45s isolate the controller ports (VCC isolation), and the ALVC164245s sit disabled (both ports high-impedance) on their /OE pull-ups.
+- **Sequencing:** the ECP5 has no constraints between its rails. The one board-level constraint is 3.3 V before 5 V, for the ALVC164245s, which the PG-to-EN link enforces.
 - **Budget:** ~1.4 A at 5 V (~7 W), including a cartridge allowance; under 1 A drawn from VBUS at 9 V.
 
 ### Decoupling
@@ -631,7 +639,7 @@ Recorded from the full schematic review. Each was considered and either accepted
 | 12 | Rail capacitance | Pooled bulk per rail, as engineered. **Accepted.** |
 | 13 | Connector power pins | Bulk capacitance only, no 100 nF. **Accepted.** |
 | 14 | Input OR diodes | Removed. A header JP1 with a shunt selects VBUS or the debug input. **Done.** |
-| 15 | ALVC164245 /OE pull-down | **Kept.** 3.3 V always rises first and DIR defaults inbound. A pull-up would have to be ≤4.7k to beat the ECP5's configuration pull-down. |
+| 15 | ALVC164245 /OE | **Changed to a 4.7 kΩ pull-up to +3V3** (R77, R79), per TI. The 47 kΩ slot pull-ups keep the cart bus idle with the transceivers disabled, so enabling them gained nothing. 4.7 kΩ beats the ECP5's configuration pull-down. DIR keeps its 10 kΩ pull-down. Power sequencing (3.3 V first) is enforced by U74 PG to U80 EN. |
 | 16 | Cartridge +5 V | One 1 A polyfuse feeding both pins. **Done**; confirm with measured cart current. |
 | 17 | HDMI TMDS | Output 480p60 (NTSC) / 576p50 (PAL) at 27 MHz, so 270 Mb/s per lane, within the -6 datasheet limits. TMDS driven directly from bank 0 (hot-socket rated, clamp off) through 270 Ω series resistors into the sink's 50 Ω termination. Transmitter chips rejected on cost and stock (ADV7513, IT66121) or for lacking audio (TFP410); DP159-class redrivers not needed at this rate. The high-level tolerance, the board-off leakage maximum and back-powering an unpowered TV are **accepted deviations**, the last handled by a gateware receiver-sense rule. **Done.** |
 | 18 | PCM1808 VCC | Fed straight from +5V, no filter. Noise is an **accepted risk.** |

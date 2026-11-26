@@ -57454,6 +57454,12 @@
 		(uuid "d9dd2aeb-8eb4-4407-b7f6-24de4e4a52a7")
 	)
 	(junction
+		(at 382.905 313.69)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "dbaefb32-647f-49c1-acd8-27460aa30cfc")
+	)
+	(junction
 		(at -82.55 201.93)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -57844,10 +57850,6 @@
 		(uuid "863c8ff9-69a9-40b8-8b27-ccf745102798")
 	)
 	(no_connect
-		(at 481.33 265.43)
-		(uuid "8881f063-18b7-4548-bc5e-9ba1b77f35f2")
-	)
-	(no_connect
 		(at 228.6 241.3)
 		(uuid "96038806-f2af-47db-b3c3-50f095ad2aa9")
 	)
@@ -57962,6 +57964,16 @@
 			(type default)
 		)
 		(uuid "01613071-eaec-405f-9ef4-0ce60e4b6fa1")
+	)
+	(wire
+		(pts
+			(xy 381.635 304.8) (xy 382.905 304.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "01a5c3cb-68c4-4c3d-af33-cca05768fdeb")
 	)
 	(wire
 		(pts
@@ -62965,6 +62977,16 @@
 	)
 	(wire
 		(pts
+			(xy 382.905 313.69) (xy 384.81 313.69)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c3577d87-ea10-41db-8def-260344080a16")
+	)
+	(wire
+		(pts
 			(xy 457.2 707.39) (xy 458.47 707.39)
 		)
 		(stroke
@@ -63825,7 +63847,7 @@
 	)
 	(wire
 		(pts
-			(xy 373.38 313.69) (xy 384.81 313.69)
+			(xy 373.38 313.69) (xy 382.905 313.69)
 		)
 		(stroke
 			(width 0)
@@ -64082,6 +64104,16 @@
 			(type default)
 		)
 		(uuid "f1ce15e8-62ed-4665-9e50-ed916c2066f5")
+	)
+	(wire
+		(pts
+			(xy 382.905 304.8) (xy 382.905 313.69)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f2a0dfec-44b1-4d0a-a959-9cac0411a320")
 	)
 	(wire
 		(pts
@@ -75099,6 +75131,30 @@
 			)
 		)
 	)
+	(global_label "5V_EN"
+		(shape input)
+		(at 481.33 265.43 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "b4b0a8d1-df51-49c4-8be2-d7672c0cba88")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 490.0604 265.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
 	(global_label "C2_P1_DIR"
 		(shape input)
 		(at 107.95 96.52 180)
@@ -78496,6 +78552,30 @@
 		(uuid "e922cec3-974e-483b-90fe-f3aa81063250")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 93.6558 124.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "5V_EN"
+		(shape input)
+		(at 381.635 304.8 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "e9c6f2fd-5934-4a79-b0d2-1cfcc31d158c")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 372.9046 304.8 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -101856,6 +101936,85 @@
 		)
 	)
 	(symbol
+		(lib_id "power:+3V3")
+		(at 194.31 326.39 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "4e71e455-b593-4f16-bc81-edf72c4eb9e3")
+		(property "Reference" "#PWR0244"
+			(at 190.5 326.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 198.12 326.3899 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 194.31 326.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 194.31 326.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 194.31 326.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ffa2521e-9baa-4b79-9b0f-1f0fd2594290")
+		)
+		(instances
+			(project "genesis"
+				(path "/3699540c-73c4-4574-aa50-eb15be30e7b9"
+					(reference "#PWR0244")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 349.25 617.22 0)
 		(unit 1)
@@ -109885,7 +110044,7 @@
 				)
 			)
 		)
-		(property "Value" "10k"
+		(property "Value" "4.7k"
 			(at 191.77 316.23 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -109928,7 +110087,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C25744"
+		(property "LCSC" "C25900"
 			(at 191.77 318.77 90)
 			(hide yes)
 			(show_name no)
@@ -121148,85 +121307,6 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 194.31 318.77 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "8d54d8b8-a6f4-452e-b6ea-85c8c3ae1074")
-		(property "Reference" "#PWR0205"
-			(at 200.66 318.77 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 198.12 318.7699 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 194.31 318.77 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 194.31 318.77 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 194.31 318.77 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "8f0bf288-29d7-4320-8cff-59c38ad018d3")
-		)
-		(instances
-			(project "genesis"
-				(path "/3699540c-73c4-4574-aa50-eb15be30e7b9"
-					(reference "#PWR0205")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
 		(at 331.47 337.82 270)
 		(unit 1)
 		(body_style 1)
@@ -126399,7 +126479,7 @@
 				)
 			)
 		)
-		(property "Value" "10k"
+		(property "Value" "4.7k"
 			(at 191.77 323.85 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -126442,7 +126522,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C25744"
+		(property "LCSC" "C25900"
 			(at 191.77 326.39 90)
 			(hide yes)
 			(show_name no)
@@ -134450,85 +134530,6 @@
 			(project "genesis"
 				(path "/3699540c-73c4-4574-aa50-eb15be30e7b9"
 					(reference "R42")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 194.31 326.39 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ba4ff5f8-8743-4e3d-85dd-0135d793ee11")
-		(property "Reference" "#PWR0221"
-			(at 200.66 326.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 198.12 326.3899 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 194.31 326.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 194.31 326.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 194.31 326.39 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "2f79e9ce-ac30-4bcd-b21e-d0c5aa0c7a38")
-		)
-		(instances
-			(project "genesis"
-				(path "/3699540c-73c4-4574-aa50-eb15be30e7b9"
-					(reference "#PWR0221")
 					(unit 1)
 				)
 			)
@@ -144284,6 +144285,85 @@
 			(project "genesis"
 				(path "/3699540c-73c4-4574-aa50-eb15be30e7b9"
 					(reference "U52")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 194.31 318.77 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "dcae8c67-82a7-4fd7-aff7-9a5511494d0b")
+		(property "Reference" "#PWR0221"
+			(at 190.5 318.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 198.12 318.7699 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 194.31 318.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 194.31 318.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 194.31 318.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "4197cc4a-c68d-419c-8d64-8c1e40b5e984")
+		)
+		(instances
+			(project "genesis"
+				(path "/3699540c-73c4-4574-aa50-eb15be30e7b9"
+					(reference "#PWR0221")
 					(unit 1)
 				)
 			)
